@@ -9,6 +9,7 @@ import 'package:image/image.dart' as img;
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:gal/gal.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PrinterController extends ChangeNotifier {
   BluetoothDevice? connectedDevice;
@@ -48,6 +49,8 @@ class PrinterController extends ChangeNotifier {
       isScanning = state;
       notifyListeners();
     });
+
+    await _tryAutoConnect();
   }
 
   Future<void> startScan() async {
@@ -82,6 +85,9 @@ class PrinterController extends ChangeNotifier {
         }
       }
       statusMessage = "Conectado a ${device.platformName}";
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('last_device_id', device.remoteId.str);
     } catch (e) {
       statusMessage = "Erro conexão: $e";
       connectedDevice = null;
@@ -90,6 +96,9 @@ class PrinterController extends ChangeNotifier {
   }
 
   Future<void> disconnect() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('last_device_id');
+
     await connectedDevice?.disconnect();
     connectedDevice = null;
     _txCharacteristic = null;
@@ -245,6 +254,25 @@ class PrinterController extends ChangeNotifier {
       } else {
         await _txCharacteristic!.write(data, withoutResponse: false);
       }
+    }
+  }
+
+  Future<void> _tryAutoConnect() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastId = prefs.getString('last_device_id');
+    if (lastId == null) return;
+
+    try {
+      statusMessage = "Reconectando automaticamente...";
+      notifyListeners();
+
+      // Instancia o device direto pelo ID (sem scan)
+      final device = BluetoothDevice.fromId(lastId);
+      await connect(device);
+    } catch (e) {
+      // Se falhar silenciosamente, apenas limpa a msg
+      statusMessage = "Desconectado";
+      notifyListeners();
     }
   }
 }
