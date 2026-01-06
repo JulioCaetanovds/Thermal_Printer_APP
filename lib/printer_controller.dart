@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -9,6 +8,7 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:image/image.dart' as img;
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:gal/gal.dart';
 
 class PrinterController extends ChangeNotifier {
   BluetoothDevice? connectedDevice;
@@ -112,15 +112,25 @@ class PrinterController extends ChangeNotifier {
   Future<void> _cropImage(File imageFile) async {
     final croppedFile = await ImageCropper().cropImage(
       sourcePath: imageFile.path,
+      // aspectRatioPresets não é suportado diretamente aqui na versão atual
       uiSettings: [
         AndroidUiSettings(
-          toolbarTitle: 'Recortar',
+          toolbarTitle: 'Recortar & Ajustar',
           toolbarColor: const Color(0xFF0D1B50),
           toolbarWidgetColor: Colors.white,
           initAspectRatio: CropAspectRatioPreset.original,
           lockAspectRatio: false,
+          // hideBottomControls: false, // Garante que os controles apareçam
+          // Se o footer estiver tapando, reduzir os presets ajuda no layout
+          showCropGrid: true,
         ),
-        IOSUiSettings(title: 'Recortar'),
+        IOSUiSettings(
+          title: 'Recortar',
+          aspectRatioPresets: [
+            CropAspectRatioPreset.original,
+            CropAspectRatioPreset.square,
+          ],
+        ),
       ],
     );
 
@@ -164,6 +174,24 @@ class PrinterController extends ChangeNotifier {
       statusMessage = "Erro no processamento: $e";
     } finally {
       isProcessing = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> saveToGallery() async {
+    if (previewBytes == null) return;
+
+    try {
+      statusMessage = "Salvando na galeria...";
+      notifyListeners();
+
+      // Requer pacote 'gal' no pubspec.yaml
+      await Gal.putImageBytes(previewBytes!);
+
+      statusMessage = "Salvo na Galeria com sucesso!";
+    } catch (e) {
+      statusMessage = "Erro ao salvar: $e";
+    } finally {
       notifyListeners();
     }
   }
@@ -253,11 +281,13 @@ Map<String, dynamic> processImageTask(Map<String, dynamic> params) {
       image.setPixelRgb(x, y, newPixel, newPixel, newPixel);
 
       if (x + 1 < image.width) _addError(image, x + 1, y, error * 7 ~/ 16);
-      if (x - 1 >= 0 && y + 1 < image.height)
+      if (x - 1 >= 0 && y + 1 < image.height) {
         _addError(image, x - 1, y + 1, error * 3 ~/ 16);
+      }
       if (y + 1 < image.height) _addError(image, x, y + 1, error * 5 ~/ 16);
-      if (x + 1 < image.width && y + 1 < image.height)
+      if (x + 1 < image.width && y + 1 < image.height) {
         _addError(image, x + 1, y + 1, error * 1 ~/ 16);
+      }
     }
   }
 

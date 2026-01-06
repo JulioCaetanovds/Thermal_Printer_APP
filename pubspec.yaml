@@ -40,6 +40,8 @@ dependencies:
   image: ^4.3.0
   esc_pos_utils_plus: ^2.0.4
   image_cropper: ^8.0.2
+  gal: ^2.3.2
+  shared_preferences: ^2.5.4
 
 dev_dependencies:
   flutter_test:

@@ -110,6 +110,24 @@ class HomeScreen extends StatelessWidget {
                                 : const Text("Nenhuma imagem selecionada"),
                           ),
                         ),
+                        // Botão de Salvar na Galeria (Abaixo do Preview)
+                        if (controller.previewBytes != null)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton.icon(
+                                onPressed: controller.saveToGallery,
+                                icon: const Icon(Icons.save_alt, size: 20),
+                                label: const Text("Salvar cópia na Galeria"),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.black54,
+                                ),
+                              ),
+                            ),
+                          ),
 
                         // Controls
                         if (controller.selectedImage != null) ...[
