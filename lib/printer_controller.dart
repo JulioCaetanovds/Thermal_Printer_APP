@@ -18,19 +18,21 @@ class PrinterController extends ChangeNotifier {
 
   bool isScanning = false;
   bool isPrinting = false;
-  bool isProcessing = false; // Novo: indica processamento de imagem
+  bool isProcessing = false; 
 
-  File? selectedImage; // Imagem original colorida
-  Uint8List? previewBytes; // Imagem processada (BW) para preview
-  img.Image? _processedImageRaw; // Imagem processada em memória para envio
+  File? selectedImage; 
+  Uint8List? previewBytes; 
+  img.Image? _processedImageRaw; 
 
-  // Parametros de ajuste
   double contrast = 1.0;
-  double brightness = 1.0; // 1.0 = original
+  double brightness = 1.0; 
 
   String statusMessage = "Desconectado";
 
   final _picker = ImagePicker();
+  
+  // --- ADICIONADO: controle de isolates concorrentes ---
+  int _previewTaskId = 0;
 
   Future<void> init() async {
     await [
@@ -106,8 +108,6 @@ class PrinterController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- IMAGEM ---
-
   Future<void> pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null) await _cropImage(File(image.path));
@@ -121,7 +121,6 @@ class PrinterController extends ChangeNotifier {
   Future<void> _cropImage(File imageFile) async {
     final croppedFile = await ImageCropper().cropImage(
       sourcePath: imageFile.path,
-      // aspectRatioPresets não é suportado diretamente aqui na versão atual
       uiSettings: [
         AndroidUiSettings(
           toolbarTitle: 'Recortar & Ajustar',
@@ -129,8 +128,6 @@ class PrinterController extends ChangeNotifier {
           toolbarWidgetColor: Colors.white,
           initAspectRatio: CropAspectRatioPreset.original,
           lockAspectRatio: false,
-          // hideBottomControls: false, // Garante que os controles apareçam
-          // Se o footer estiver tapando, reduzir os presets ajuda no layout
           showCropGrid: true,
         ),
         IOSUiSettings(
@@ -145,10 +142,9 @@ class PrinterController extends ChangeNotifier {
 
     if (croppedFile != null) {
       selectedImage = File(croppedFile.path);
-      // Reseta parametros ao carregar nova imagem
       contrast = 1.2;
-      brightness = 0.8; // Defaults bons para termicas
-      await generatePreview(); // Gera o primeiro preview auto
+      brightness = 0.8; 
+      await generatePreview(); 
     }
   }
 
@@ -156,12 +152,14 @@ class PrinterController extends ChangeNotifier {
     contrast = newContrast;
     brightness = newBrightness;
     notifyListeners();
-    // Debounce manual: Chame generatePreview() na UI quando soltar o slider
   }
 
-  // Roda em Isolate para não travar a UI
   Future<void> generatePreview() async {
     if (selectedImage == null) return;
+
+    // --- ADICIONADO: incrementa ID para cancelar isolates antigos ---
+    _previewTaskId++;
+    final currentTaskId = _previewTaskId;
 
     isProcessing = true;
     notifyListeners();
@@ -169,21 +167,24 @@ class PrinterController extends ChangeNotifier {
     try {
       final rawBytes = await selectedImage!.readAsBytes();
 
-      // Envia para thread separada
       final result = await compute(processImageTask, {
         'bytes': rawBytes,
         'contrast': contrast,
         'brightness': brightness,
-        'width': 380, // Largura segura para 58mm
       });
 
+      // --- ADICIONADO: verifica se é a requisição mais recente ---
+      if (currentTaskId != _previewTaskId) return;
+
       _processedImageRaw = result['image'] as img.Image;
-      previewBytes = result['pngBytes'] as Uint8List; // Para exibir na tela
+      previewBytes = result['pngBytes'] as Uint8List; 
     } catch (e) {
       statusMessage = "Erro no processamento: $e";
     } finally {
-      isProcessing = false;
-      notifyListeners();
+      if (currentTaskId == _previewTaskId) {
+        isProcessing = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -194,9 +195,7 @@ class PrinterController extends ChangeNotifier {
       statusMessage = "Salvando na galeria...";
       notifyListeners();
 
-      // Requer pacote 'gal' no pubspec.yaml
       await Gal.putImageBytes(previewBytes!);
-
       statusMessage = "Salvo na Galeria com sucesso!";
     } catch (e) {
       statusMessage = "Erro ao salvar: $e";
@@ -212,7 +211,7 @@ class PrinterController extends ChangeNotifier {
       return;
     }
     if (_processedImageRaw == null) {
-      await generatePreview(); // Garante que temos a imagem processada
+      await generatePreview(); 
     }
 
     isPrinting = true;
@@ -224,7 +223,6 @@ class PrinterController extends ChangeNotifier {
       List<int> bytes = [];
 
       bytes += generator.reset();
-      // Usa a imagem já processada (dithered)
       bytes += generator.image(_processedImageRaw!, align: PosAlign.center);
       bytes += generator.feed(3);
 
@@ -239,7 +237,8 @@ class PrinterController extends ChangeNotifier {
   }
 
   Future<void> _sendBytesInChunks(List<int> bytes) async {
-    const int chunkSize = 200; // Safe spot para genericas
+    // --- ALTERADO: otimizado para buffer KP-1025 ---
+    const int chunkSize = 128; 
     final bool canWriteWithoutResponse =
         _txCharacteristic!.properties.writeWithoutResponse;
 
@@ -249,8 +248,7 @@ class PrinterController extends ChangeNotifier {
 
       if (canWriteWithoutResponse) {
         await _txCharacteristic!.write(data, withoutResponse: true);
-        // Delay crucial para buffer da impressora chinesa não estourar
-        await Future.delayed(const Duration(milliseconds: 10));
+        await Future.delayed(const Duration(milliseconds: 15)); 
       } else {
         await _txCharacteristic!.write(data, withoutResponse: false);
       }
@@ -266,39 +264,35 @@ class PrinterController extends ChangeNotifier {
       statusMessage = "Reconectando automaticamente...";
       notifyListeners();
 
-      // Instancia o device direto pelo ID (sem scan)
       final device = BluetoothDevice.fromId(lastId);
+      // --- ALTERADO: timeout no auto connect ---
+      await device.connect(timeout: const Duration(seconds: 4));
       await connect(device);
     } catch (e) {
-      // Se falhar silenciosamente, apenas limpa a msg
       statusMessage = "Desconectado";
       notifyListeners();
     }
   }
 }
 
-// --- TOP LEVEL FUNCTION (ISOLATE) ---
-// Deve ficar fora da classe para ser chamada pelo compute
 Map<String, dynamic> processImageTask(Map<String, dynamic> params) {
   final Uint8List bytes = params['bytes'];
   final double contrast = params['contrast'];
   final double brightness = params['brightness'];
-  final int targetWidth = params['width'];
+  
+  // --- ALTERADO: cravado 384 pontos para 58mm ---
+  final int targetWidth = 384; 
 
   img.Image? image = img.decodeImage(bytes);
   if (image == null) throw Exception("Falha ao decodificar imagem");
 
-  // 1. Resize
   image = img.copyResize(image, width: targetWidth);
-
-  // 2. Grayscale
   image = img.grayscale(image);
-
-  // 3. Ajuste de Contraste/Brilho
-  // image lib usa ranges diferentes as vezes, mas adjustColor é padrao
+  
+  // --- ADICIONADO: contraste agressivo antes do dithering ---
+  image = img.contrast(image, contrast: 1.3);
   image = img.adjustColor(image, contrast: contrast, brightness: brightness);
 
-  // 4. Dithering (Floyd-Steinberg Manual)
   for (int y = 0; y < image.height; y++) {
     for (int x = 0; x < image.width; x++) {
       final pixel = image.getPixel(x, y);
@@ -319,7 +313,6 @@ Map<String, dynamic> processImageTask(Map<String, dynamic> params) {
     }
   }
 
-  // Retorna map com imagem crua (para printer) e bytes PNG (para UI)
   return {'image': image, 'pngBytes': Uint8List.fromList(img.encodePng(image))};
 }
 
