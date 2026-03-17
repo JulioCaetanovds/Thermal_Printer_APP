@@ -4,13 +4,10 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class GeminiApiService {
-  // Agora puxamos a chave do Hugging Face
   static String get _apiKey => dotenv.env['HF_API_KEY'] ?? ''; 
   
-  // Endpoint do Stable Diffusion XL no Hugging Face
-  static const String _endpoint = 'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0';
+  static const String _endpoint = 'https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-xl-base-1.0';
 
-  // Nossos modificadores táticos para o papel de 58mm
   static const String _thermalModifiers = 
       ", pure black and white line art, 1-bit pixel art style, high contrast stencil, solid white background, no shading, no grayscale";
 
@@ -28,12 +25,10 @@ class GeminiApiService {
           'Authorization': 'Bearer $_apiKey',
           'Content-Type': 'application/json',
         },
-        // O Payload do HF é muito mais limpo
         body: jsonEncode({"inputs": finalPrompt}),
       );
 
       if (response.statusCode == 200) {
-        // A API do HF já retorna os bytes puros da imagem (JPEG/PNG)
         return response.bodyBytes;
       } else if (response.statusCode == 503) {
          throw Exception('O modelo está aquecendo no servidor. Tente novamente em 20 segundos.');
