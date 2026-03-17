@@ -55,6 +55,8 @@ class _AiCreationScreenState extends State<AiCreationScreen> {
                       child: Text(
                         widget.controller.statusMessage,
                         textAlign: TextAlign.center,
+                        maxLines: 2, // <- ADICIONE ISSO
+                        overflow: TextOverflow.ellipsis, // <- ADICIONE ISSO
                         style: const TextStyle(fontSize: 13, color: Color(0xFF5E4B8A), fontWeight: FontWeight.w600),
                       ),
                     ),

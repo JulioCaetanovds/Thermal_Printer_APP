@@ -223,7 +223,7 @@ class PrinterController extends ChangeNotifier {
       previewBytes = result['pngBytes'] as Uint8List;
       statusMessage = "Imagem gerada com sucesso!";
     } catch (e) {
-      statusMessage = "Erro na IA: $e";
+      statusMessage = "Erro na IA: ${e.toString().split('\n').first}";
     } finally {
       isProcessing = false;
       notifyListeners();
