@@ -14,26 +14,28 @@ class MainMenuScreen extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 60),
-              const Text(
-                'Impressão\nTérmica Pro',
-                style: TextStyle(
-                  fontSize: 34,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF1D1D1F), // Texto primário escuro para contraste
-                  height: 1.1,
-                  letterSpacing: -0.5,
+              // Título centralizado
+              const Center(
+                child: Text(
+                  'Impressão\nTérmica Pro',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1D1D1F),
+                    height: 1.1,
+                    letterSpacing: -0.5,
+                  ),
                 ),
               ),
               const SizedBox(height: 40),
               
-              // Rota V1
               _buildMenuCard(
                 context: context,
                 title: 'Impressão Clássica',
-                subtitle: 'Galeria, câmera e ajustes manuais',
+                subtitle: 'Galeria, câmera e ajustes',
                 icon: Icons.print_outlined,
                 onTap: () {
                   Navigator.push(
@@ -46,7 +48,6 @@ class MainMenuScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               
-              // Rota V2 (IA)
               _buildMenuCard(
                 context: context,
                 title: 'Criação com IA',
@@ -54,7 +55,6 @@ class MainMenuScreen extends StatelessWidget {
                 icon: Icons.auto_awesome,
                 isAi: true,
                 onTap: () {
-                  // TODO: Rota da IA
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Módulo de IA em desenvolvimento!'),
@@ -84,8 +84,15 @@ class MainMenuScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: const Color(0xFFF5F5F7), // 30% Secundária (Cinza Soft)
+          color: Colors.white,
           borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
           border: Border.all(
             color: isAi ? const Color(0xFF5E4B8A).withOpacity(0.3) : Colors.transparent,
             width: 1.5,
@@ -96,43 +103,19 @@ class MainMenuScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: const Color(0xFFF5F5F7),
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
               ),
-              child: Icon(
-                icon,
-                color: const Color(0xFF5E4B8A), // 10% Destaque
-                size: 28,
-              ),
+              child: Icon(icon, color: const Color(0xFF5E4B8A), size: 28),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1D1D1F),
-                    ),
-                  ),
+                  Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1D1D1F))),
                   const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                  ),
+                  Text(subtitle, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
                 ],
               ),
             ),

@@ -42,6 +42,7 @@ dependencies:
   image_cropper: ^8.0.2
   gal: ^2.3.2
   shared_preferences: ^2.5.4
+  wakelock_plus: 1.4.0
 
 dev_dependencies:
   flutter_test:

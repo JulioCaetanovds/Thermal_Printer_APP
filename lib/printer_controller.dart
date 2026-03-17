@@ -30,6 +30,8 @@ class PrinterController extends ChangeNotifier {
 
   String statusMessage = "Desconectado";
 
+  StreamSubscription<BluetoothConnectionState>? _connectionStateSub;
+
   final _picker = ImagePicker();
 
   Future<void> init() async {
@@ -86,6 +88,17 @@ class PrinterController extends ChangeNotifier {
       }
       statusMessage = "Conectado a ${device.platformName}";
 
+      // Listener de queda de conexão
+      _connectionStateSub?.cancel();
+      _connectionStateSub = device.connectionState.listen((state) {
+        if (state == BluetoothConnectionState.disconnected) {
+          connectedDevice = null;
+          _txCharacteristic = null;
+          statusMessage = "Impressora desconectada (Bateria/Distância)";
+          notifyListeners();
+        }
+      });
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('last_device_id', device.remoteId.str);
     } catch (e) {
@@ -96,15 +109,16 @@ class PrinterController extends ChangeNotifier {
   }
 
   Future<void> disconnect() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('last_device_id');
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove('last_device_id');
 
-    await connectedDevice?.disconnect();
-    connectedDevice = null;
-    _txCharacteristic = null;
-    statusMessage = "Desconectado";
-    notifyListeners();
-  }
+  _connectionStateSub?.cancel(); // Cancela o listener
+  await connectedDevice?.disconnect();
+  connectedDevice = null;
+  _txCharacteristic = null;
+  statusMessage = "Desconectado";
+  notifyListeners();
+}
 
   // --- IMAGEM ---
 
