@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'printer_controller.dart';
 
-class HomeScreen extends StatelessWidget {
+class ClassicPrintScreen extends StatelessWidget {
   final PrinterController controller;
 
-  const HomeScreen({super.key, required this.controller});
+  const ClassicPrintScreen({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -12,19 +12,21 @@ class HomeScreen extends StatelessWidget {
       animation: controller,
       builder: (context, _) {
         return Scaffold(
+          backgroundColor: const Color(0xFFFAFAFA),
           appBar: AppBar(
-            title: const Text('Impressão Térmica Pro'),
-            backgroundColor: const Color(0xFF0D1B50),
-            foregroundColor: Colors.white,
+            title: const Text('Impressão Clássica', style: TextStyle(fontSize: 18)),
+            backgroundColor: Colors.transparent,
+            foregroundColor: const Color(0xFF1D1D1F),
+            elevation: 0,
+            centerTitle: true,
             actions: [
-              // Indicador de Conexão Rápida
               Icon(
                 controller.connectedDevice != null
                     ? Icons.bluetooth_connected
                     : Icons.bluetooth_disabled,
                 color: controller.connectedDevice != null
-                    ? Colors.greenAccent
-                    : Colors.redAccent,
+                    ? const Color(0xFF5E4B8A) // Design integrado
+                    : Colors.grey[400],
               ),
               const SizedBox(width: 16),
             ],
@@ -32,44 +34,52 @@ class HomeScreen extends StatelessWidget {
           body: SafeArea(
             child: Column(
               children: [
-                // Status Bar Compacta
+                // Status Bar Refatorada
                 if (controller.statusMessage.isNotEmpty)
-                  Container(
-                    width: double.infinity,
-                    color: Colors.amber[100],
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Text(
-                      controller.statusMessage,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F5F7),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        controller.statusMessage,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 13, color: Color(0xFF5E4B8A), fontWeight: FontWeight.w500),
+                      ),
                     ),
                   ),
 
-                // Área de Bluetooth (Expansível se desconectado)
                 if (controller.connectedDevice == null)
                   Expanded(
                     flex: 2,
                     child: Column(
                       children: [
-                        ElevatedButton(
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
                           onPressed: controller.startScan,
-                          child: const Text("Buscar Impressoras"),
+                          icon: const Icon(Icons.search),
+                          label: const Text("Buscar Impressoras"),
+                          style: ElevatedButton.styleFrom(
+                            elevation: 0,
+                            backgroundColor: const Color(0xFFF5F5F7),
+                            foregroundColor: const Color(0xFF5E4B8A),
+                          ),
                         ),
+                        const SizedBox(height: 16),
                         Expanded(
                           child: ListView.separated(
                             itemCount: controller.scanResults.length,
-                            separatorBuilder: (_, __) =>
-                                const Divider(height: 1),
+                            separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFEBEBEB)),
                             itemBuilder: (context, index) {
                               final r = controller.scanResults[index];
                               return ListTile(
-                                title: Text(
-                                  r.device.platformName.isNotEmpty
-                                      ? r.device.platformName
-                                      : "Device",
-                                ),
-                                subtitle: Text(r.device.remoteId.toString()),
-                                trailing: ElevatedButton(
+                                title: Text(r.device.platformName.isNotEmpty ? r.device.platformName : "Device"),
+                                subtitle: Text(r.device.remoteId.toString(), style: TextStyle(color: Colors.grey[500])),
+                                trailing: TextButton(
                                   onPressed: () => controller.connect(r.device),
                                   child: const Text('Conectar'),
                                 ),
@@ -81,103 +91,87 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
 
-                const Divider(),
+                if (controller.connectedDevice != null) const Divider(color: Color(0xFFEBEBEB), height: 1),
 
-                // Área de Edição e Preview
                 Expanded(
                   flex: 4,
                   child: SingleChildScrollView(
                     child: Column(
                       children: [
-                        // Preview Area
                         Container(
                           height: 250,
                           width: double.infinity,
                           margin: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey),
-                            color: Colors.grey[200],
+                            color: const Color(0xFFF5F5F7), // Cinza Soft
+                            borderRadius: BorderRadius.circular(16),
                           ),
                           child: Center(
                             child: controller.isProcessing
-                                ? const CircularProgressIndicator()
+                                ? const CircularProgressIndicator(color: Color(0xFF5E4B8A))
                                 : controller.previewBytes != null
-                                ? Image.memory(
-                                    controller.previewBytes!,
-                                    fit: BoxFit.contain,
-                                    gaplessPlayback: true,
-                                  )
-                                : const Text("Nenhuma imagem selecionada"),
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: Image.memory(
+                                          controller.previewBytes!,
+                                          fit: BoxFit.contain,
+                                          gaplessPlayback: true,
+                                        ),
+                                      )
+                                    : Text("Nenhuma imagem selecionada", style: TextStyle(color: Colors.grey[500])),
                           ),
                         ),
-                        // Botão de Salvar na Galeria (Abaixo do Preview)
                         if (controller.previewBytes != null)
                           Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
                             child: Align(
                               alignment: Alignment.centerRight,
                               child: TextButton.icon(
                                 onPressed: controller.saveToGallery,
                                 icon: const Icon(Icons.save_alt, size: 20),
-                                label: const Text("Salvar cópia na Galeria"),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: Colors.black54,
-                                ),
+                                label: const Text("Salvar na Galeria"),
+                                style: TextButton.styleFrom(foregroundColor: const Color(0xFF5E4B8A)),
                               ),
                             ),
                           ),
-
-                        // Controls
                         if (controller.selectedImage != null) ...[
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                             child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  "Ajuste de Qualidade (Preto / Branco)",
-                                ),
+                                Text("Ajuste de Qualidade", style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                                const SizedBox(height: 8),
                                 Row(
                                   children: [
-                                    const Icon(Icons.contrast, size: 20),
+                                    const Icon(Icons.contrast, size: 20, color: Color(0xFF5E4B8A)),
                                     Expanded(
                                       child: Slider(
                                         value: controller.contrast,
                                         min: 0.5,
                                         max: 2.0,
                                         divisions: 15,
-                                        label:
-                                            "Contraste: ${controller.contrast.toStringAsFixed(1)}",
-                                        onChanged: (v) =>
-                                            controller.updateParams(
-                                              v,
-                                              controller.brightness,
-                                            ),
-                                        onChangeEnd: (_) =>
-                                            controller.generatePreview(),
+                                        activeColor: const Color(0xFF5E4B8A),
+                                        inactiveColor: const Color(0xFF5E4B8A).withOpacity(0.2),
+                                        onChanged: (v) => controller.updateParams(v, controller.brightness),
+                                        onChangeEnd: (_) => controller.generatePreview(),
                                       ),
                                     ),
                                   ],
                                 ),
                                 Row(
                                   children: [
-                                    const Icon(Icons.brightness_6, size: 20),
+                                    const Icon(Icons.brightness_6, size: 20, color: Color(0xFF5E4B8A)),
                                     Expanded(
                                       child: Slider(
                                         value: controller.brightness,
                                         min: 0.1,
                                         max: 2.0,
                                         divisions: 19,
-                                        label:
-                                            "Brilho: ${controller.brightness.toStringAsFixed(1)}",
-                                        onChanged: (v) =>
-                                            controller.updateParams(
-                                              controller.contrast,
-                                              v,
-                                            ),
-                                        onChangeEnd: (_) =>
-                                            controller.generatePreview(),
+                                        activeColor: const Color(0xFF5E4B8A),
+                                        inactiveColor: const Color(0xFF5E4B8A).withOpacity(0.2),
+                                        onChanged: (v) => controller.updateParams(controller.contrast, v),
+                                        onChangeEnd: (_) => controller.generatePreview(),
                                       ),
                                     ),
                                   ],
@@ -191,17 +185,12 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
 
-                // Botões de Ação Fixos no Rodapé
                 Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: Colors.white,
                     boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 4,
-                        offset: Offset(0, -2),
-                      ),
+                      BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, -4)),
                     ],
                   ),
                   child: Row(
@@ -210,37 +199,43 @@ class HomeScreen extends StatelessWidget {
                       IconButton.filledTonal(
                         onPressed: controller.pickImage,
                         icon: const Icon(Icons.photo_library),
+                        style: IconButton.styleFrom(
+                          backgroundColor: const Color(0xFFF5F5F7),
+                          foregroundColor: const Color(0xFF5E4B8A),
+                        ),
                       ),
                       IconButton.filledTonal(
                         onPressed: controller.takePhoto,
                         icon: const Icon(Icons.camera_alt),
+                        style: IconButton.styleFrom(
+                          backgroundColor: const Color(0xFFF5F5F7),
+                          foregroundColor: const Color(0xFF5E4B8A),
+                        ),
                       ),
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.only(left: 16),
                           child: ElevatedButton.icon(
-                            onPressed:
-                                (controller.connectedDevice != null &&
+                            onPressed: (controller.connectedDevice != null &&
                                     controller.previewBytes != null &&
                                     !controller.isPrinting)
                                 ? controller.printImage
                                 : null,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF0D1B50),
+                              backgroundColor: const Color(0xFF5E4B8A),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 16),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                             icon: controller.isPrinting
                                 ? const SizedBox(
                                     width: 20,
                                     height: 20,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                                   )
                                 : const Icon(Icons.print),
-                            label: const Text('IMPRIMIR'),
+                            label: const Text('IMPRIMIR', style: TextStyle(fontWeight: FontWeight.bold)),
                           ),
                         ),
                       ),
