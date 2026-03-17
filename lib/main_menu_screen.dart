@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'printer_controller.dart';
 import 'classic_print_screen.dart';
+import 'ai_creation_screen.dart'; 
 
 class MainMenuScreen extends StatelessWidget {
   final PrinterController controller;
@@ -16,7 +17,6 @@ class MainMenuScreen extends StatelessWidget {
           child: Column(
             children: [
               const SizedBox(height: 60),
-              // Título centralizado
               const Center(
                 child: Text(
                   'Impressão\nTérmica Pro',
@@ -55,10 +55,10 @@ class MainMenuScreen extends StatelessWidget {
                 icon: Icons.auto_awesome,
                 isAi: true,
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Módulo de IA em desenvolvimento!'),
-                      behavior: SnackBarBehavior.floating,
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AiCreationScreen(controller: controller),
                     ),
                   );
                 },

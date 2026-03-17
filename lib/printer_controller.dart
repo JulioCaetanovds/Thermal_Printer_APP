@@ -10,6 +10,7 @@ import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:gal/gal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'gemini_api_service.dart';
 
 class PrinterController extends ChangeNotifier {
   BluetoothDevice? connectedDevice;
@@ -195,6 +196,34 @@ class PrinterController extends ChangeNotifier {
       previewBytes = result['pngBytes'] as Uint8List; // Para exibir na tela
     } catch (e) {
       statusMessage = "Erro no processamento: $e";
+    } finally {
+      isProcessing = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> generateFromAi(String prompt) async {
+    if (prompt.isEmpty) return;
+    
+    isProcessing = true;
+    statusMessage = "Gerando imagem com IA (Isso pode levar uns segundos)...";
+    notifyListeners();
+
+    try {
+      final generatedBytes = await GeminiApiService.generateImage(prompt);
+
+      final result = await compute(processImageTask, {
+        'bytes': generatedBytes,
+        'contrast': 1.2, 
+        'brightness': 1.0,
+        'width': 380,
+      });
+
+      _processedImageRaw = result['image'] as img.Image;
+      previewBytes = result['pngBytes'] as Uint8List;
+      statusMessage = "Imagem gerada com sucesso!";
+    } catch (e) {
+      statusMessage = "Erro na IA: $e";
     } finally {
       isProcessing = false;
       notifyListeners();
