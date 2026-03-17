@@ -20,10 +20,11 @@ O verdadeiro desafio de imprimir fotos em impressoras de cupom fiscal não é a 
 
 ---
 
-## 📸 Demonstração
+## 📸 Demonstração V.1
 <img src="https://github.com/user-attachments/assets/d394d1d2-ffcf-4cca-a1ef-31d7ff4d1afd" width="250" /> <img src="https://github.com/user-attachments/assets/d96f42fe-298a-4da9-a3bc-61471b712f88" width="250" /> <img src="https://github.com/user-attachments/assets/344a8f8f-66b8-43cf-aa0a-c9e913402250" width="250" />
 
-*(Nota: Adicione aqui as novas screenshots da tela inicial e da tela de IA!)*
+## 📸 Demonstração V.2
+<img src="https://github.com/user-attachments/assets/c689222f-0532-4210-a1a3-9da2825bdc8c" width="250" /> <img src="https://github.com/user-attachments/assets/a5d6e61c-73a2-4a95-b358-bbd11a2aa271" width="250" /> <img src="https://github.com/user-attachments/assets/d45031a9-e898-4f61-b68d-f456b410f5c0" width="250" />
 
 ---
 
