@@ -19,8 +19,8 @@ class ClassicPrintScreen extends StatelessWidget {
             foregroundColor: const Color(0xFF1D1D1F),
             elevation: 0,
             centerTitle: true,
-            surfaceTintColor: Colors.transparent, // Fix do cabeçalho
-            scrolledUnderElevation: 0, 
+            surfaceTintColor: Colors.transparent,
+            scrolledUnderElevation: 0,
             actions: [
               Icon(
                 controller.connectedDevice != null ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
@@ -42,151 +42,103 @@ class ClassicPrintScreen extends StatelessWidget {
                       child: Text(
                         controller.statusMessage,
                         textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 13, color: Color(0xFF5E4B8A), fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
 
-                if (controller.connectedDevice == null)
-                  Expanded(
-                    flex: 2,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
-                      ),
-                      child: Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: ElevatedButton.icon(
-                              onPressed: controller.startScan,
-                              icon: const Icon(Icons.search),
-                              label: const Text("Buscar Impressoras"),
-                              style: ElevatedButton.styleFrom(
-                                elevation: 0,
-                                backgroundColor: const Color(0xFFF5F5F7),
-                                foregroundColor: const Color(0xFF5E4B8A),
-                                minimumSize: const Size(double.infinity, 48),
-                              ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        Container(
+                          height: 250,
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(top: 8, bottom: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+                          ),
+                          child: Center(
+                            child: controller.isProcessing
+                                ? const CircularProgressIndicator(color: Color(0xFF5E4B8A))
+                                : controller.previewBytes != null
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: Image.memory(controller.previewBytes!, fit: BoxFit.contain, gaplessPlayback: true),
+                                      )
+                                    : Text("Nenhuma imagem selecionada", style: TextStyle(color: Colors.grey[500])),
+                          ),
+                        ),
+                        if (controller.previewBytes != null)
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton.icon(
+                              onPressed: controller.saveToGallery,
+                              icon: const Icon(Icons.save_alt, size: 20),
+                              label: const Text("Salvar na Galeria"),
+                              style: TextButton.styleFrom(foregroundColor: const Color(0xFF5E4B8A)),
                             ),
                           ),
-                          Expanded(
-                            child: ListView.separated(
-                              itemCount: controller.scanResults.length,
-                              separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF0F0F0)),
-                              itemBuilder: (context, index) {
-                                final r = controller.scanResults[index];
-                                return ListTile(
-                                  title: Text(r.device.platformName.isNotEmpty ? r.device.platformName : "Device"),
-                                  subtitle: Text(r.device.remoteId.toString(), style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-                                  trailing: TextButton(
-                                    onPressed: () => controller.connect(r.device),
-                                    child: const Text('Conectar'),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                if (controller.connectedDevice != null)
-                  Expanded(
-                    flex: 4,
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        children: [
+                        if (controller.selectedImage != null)
                           Container(
-                            height: 250,
-                            width: double.infinity,
-                            margin: const EdgeInsets.only(top: 8, bottom: 16),
+                            padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
                             ),
-                            child: Center(
-                              child: controller.isProcessing
-                                  ? const CircularProgressIndicator(color: Color(0xFF5E4B8A))
-                                  : controller.previewBytes != null
-                                      ? ClipRRect(
-                                          borderRadius: BorderRadius.circular(16),
-                                          child: Image.memory(controller.previewBytes!, fit: BoxFit.contain, gaplessPlayback: true),
-                                        )
-                                      : Text("Nenhuma imagem selecionada", style: TextStyle(color: Colors.grey[500])),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Ajustes Manuais", style: TextStyle(color: Colors.grey[800], fontSize: 14, fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.contrast, size: 20, color: Color(0xFF5E4B8A)),
+                                    Expanded(
+                                      child: Slider(
+                                        value: controller.contrast,
+                                        min: 0.5,
+                                        max: 2.0,
+                                        divisions: 15,
+                                        activeColor: const Color(0xFF5E4B8A),
+                                        inactiveColor: const Color(0xFFF5F5F7),
+                                        onChanged: (v) => controller.updateParams(v, controller.brightness),
+                                        onChangeEnd: (_) => controller.generatePreview(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.brightness_6, size: 20, color: Color(0xFF5E4B8A)),
+                                    Expanded(
+                                      child: Slider(
+                                        value: controller.brightness,
+                                        min: 0.1,
+                                        max: 2.0,
+                                        divisions: 19,
+                                        activeColor: const Color(0xFF5E4B8A),
+                                        inactiveColor: const Color(0xFFF5F5F7),
+                                        onChanged: (v) => controller.updateParams(controller.contrast, v),
+                                        onChangeEnd: (_) => controller.generatePreview(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
-                          if (controller.previewBytes != null)
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton.icon(
-                                onPressed: controller.saveToGallery,
-                                icon: const Icon(Icons.save_alt, size: 20),
-                                label: const Text("Salvar na Galeria"),
-                                style: TextButton.styleFrom(foregroundColor: const Color(0xFF5E4B8A)),
-                              ),
-                            ),
-                          if (controller.selectedImage != null)
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text("Ajustes Manuais", style: TextStyle(color: Colors.grey[800], fontSize: 14, fontWeight: FontWeight.bold)),
-                                  const SizedBox(height: 16),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.contrast, size: 20, color: Color(0xFF5E4B8A)),
-                                      Expanded(
-                                        child: Slider(
-                                          value: controller.contrast,
-                                          min: 0.5,
-                                          max: 2.0,
-                                          divisions: 15,
-                                          activeColor: const Color(0xFF5E4B8A),
-                                          inactiveColor: const Color(0xFFF5F5F7),
-                                          onChanged: (v) => controller.updateParams(v, controller.brightness),
-                                          onChangeEnd: (_) => controller.generatePreview(),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.brightness_6, size: 20, color: Color(0xFF5E4B8A)),
-                                      Expanded(
-                                        child: Slider(
-                                          value: controller.brightness,
-                                          min: 0.1,
-                                          max: 2.0,
-                                          divisions: 19,
-                                          activeColor: const Color(0xFF5E4B8A),
-                                          inactiveColor: const Color(0xFFF5F5F7),
-                                          onChanged: (v) => controller.updateParams(controller.contrast, v),
-                                          onChangeEnd: (_) => controller.generatePreview(),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          const SizedBox(height: 24),
-                        ],
-                      ),
+                        const SizedBox(height: 24),
+                      ],
                     ),
                   ),
+                ),
 
                 Container(
                   padding: const EdgeInsets.all(16),
